@@ -1,0 +1,42 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "sky-protect-helper-parameter-loader"
+dynamic = ["version"]
+description = "SkyProtect Helper Parameter Loader"
+readme = "README.md"
+requires-python = ">=3.8"
+authors = []
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Intended Audience :: Developers",
+  "Programming Language :: Python",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.8",
+  "Programming Language :: Python :: 3.9",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+]
+dependencies = [
+  "boto3 ==1.37.22",
+]
+
+[project.urls]
+Homepage = "https://github.com/sky-uk/sp-python-modules"
+Repository = "https://github.com/sky-uk/sp-python-modules"
+
+[tool.hatch.version]
+path = "src/sky_protect/helper/parameter_loader/version.py"
+
+[tool.hatch.build.targets.sdist]
+include = [
+  "/src",
+  "/tests",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/sky_protect"]
