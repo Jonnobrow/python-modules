@@ -17,7 +17,6 @@ _____
 
 import logging
 import os
-from typing import Optional
 import boto3
 
 logger = logging.getLogger(__name__)
@@ -64,7 +63,7 @@ def _get_parameters_by_path(path: str) -> list[dict]:
     return parameters
 
 
-def _export_parameters(parameters: list[dict]) -> list[str]:
+def _export_parameters(parameters: list[dict], allow_list: list[str]) -> list[str]:
     exported = []
     for parameter in parameters:
         full_name = parameter.get("Name")
@@ -78,6 +77,10 @@ def _export_parameters(parameters: list[dict]) -> list[str]:
 
         name = full_name.split("/")[-1]
 
+        if allow_list and name not in allow_list:
+            logger.info(f"Skipping parameter as not in allow list: {name}")
+            continue
+
         if p_type == "StringList":
             value = value.rstrip(",")
 
@@ -90,15 +93,21 @@ def _export_parameters(parameters: list[dict]) -> list[str]:
 
 
 class ParameterLoader:
-    required_environment_variables: Optional[list[str]]
+    required_environment_variables: list[str]
+    only_required: bool = False
 
-    def __init__(self, required_variables=None) -> None:
-        self.required_environment_variables = required_variables
+    def __init__(self, required_variables=None, only_required=False) -> None:
+        self.required_environment_variables = required_variables or []
+        self.only_required = only_required
 
     def load_parameters(self) -> None:
         for path in _parameter_paths():
             parameters = _get_parameters_by_path(path)
-            _export_parameters(parameters)
+            allow_list = (
+                self.required_environment_variables if self.only_required else []
+            )
+
+            _export_parameters(parameters, allow_list)
         self.__check_required_environment()
 
     def __check_required_environment(self) -> None:
