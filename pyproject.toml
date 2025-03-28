@@ -1,0 +1,39 @@
+[project]
+name = "sp-python-modules"
+version = "0.0.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.8"
+dependencies = [
+  "sky-protect-helper-parameter-loader"
+]
+
+# https://docs.astral.sh/uv/reference/settings/
+[tool.uv]
+package = false # https://docs.astral.sh/uv/reference/settings/#package
+required-version = ">=0.5.0"
+dev-dependencies = [
+    "ruff>=0.11.0",
+    "pytest>=8.3.2",
+    "pytest-cov>=5.0.0"
+]
+
+# https://docs.astral.sh/uv/reference/settings/#sources
+[tool.uv.sources]
+sky-protect-helper-parameter-loader = { workspace = true }
+
+# https://docs.astral.sh/uv/reference/settings/#workspace
+[tool.uv.workspace]
+members = [
+  "sky-protect-helper-parameter-loader", "samples/parameter-loading-lambda",
+]
+
+[tool.ruff]
+# https://docs.astral.sh/ruff/configuration/
+target-version = "py38"
+output-format = "concise"
+
+[tool.ruff.lint]
+ignore = [
+  "E501", # line-too-long
+]
