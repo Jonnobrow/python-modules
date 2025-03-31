@@ -17,6 +17,7 @@ _____
 
 import logging
 import os
+from pathlib import Path
 from typing import Optional
 import boto3
 
@@ -95,24 +96,34 @@ def _export_parameters(parameters: list[dict], allow_list: list[str]) -> list[st
 
 class ParameterLoader:
     _required: list[str]
-    _required_file: Optional[str]
+    _required_file: str
     _only_required: bool = False
 
     def __init__(self, required=None, required_file=None, only_required=False) -> None:
         self._required = required or []
-        self._required_file = required_file
+        self._required_file = required_file or "PARAMS"
         self._only_required = only_required
 
     @property
     def _required_parameters(self) -> list[str]:
+        required = []
         if self._required_file:
+            logger.info(
+                "Loading required environment variables from file: %s",
+                self._required_file,
+            )
             try:
                 with open(self._required_file, "r") as f:
-                    return f.read().splitlines()
+                    required.extend(f.read().splitlines())
             except FileNotFoundError:
-                logger.warning(f"Required file not found: {self._required_file}")
+                logger.warning(
+                    f"Required parameters file not found: {self._required_file}"
+                )
                 return []
-        return self._required
+        required.extend(self._required)
+        required = sorted(set(required))
+        logger.info(f"Required environment variables: {', '.join(required)}")
+        return required
 
     @property
     def _allow_list(self) -> list[str]:
@@ -134,7 +145,6 @@ class ParameterLoader:
         """
         Check parameters exist in AWS Systems Manager Parameter Store.
         """
-        self._required_file
 
     def __check_required_environment(self) -> None:
         if not self._required:
