@@ -1,11 +1,10 @@
 [project]
-name = "sp-python-modules"
+name = "jonnobrows-python-modules"
 version = "0.0.0"
-description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.8"
 dependencies = [
-  "sky-protect-helper-parameter-loader"
+  "jonnobrows-helper-parameter-loader"
 ]
 
 # https://docs.astral.sh/uv/reference/settings/
@@ -20,12 +19,12 @@ dev-dependencies = [
 
 # https://docs.astral.sh/uv/reference/settings/#sources
 [tool.uv.sources]
-sky-protect-helper-parameter-loader = { workspace = true }
+jonnobrows-helper-parameter-loader = { workspace = true }
 
 # https://docs.astral.sh/uv/reference/settings/#workspace
 [tool.uv.workspace]
 members = [
-  "sky-protect-helper-parameter-loader", "samples/parameter-loading-lambda",
+  "jonnobrows-helper-parameter-loader"
 ]
 
 [tool.ruff]

@@ -1,5 +1,5 @@
 """
-The sky-protect-helper-parameter-loader package providers a way
+The jonnobrows-helper-parameter-loader package providers a way
 to load AWS Systems Manager Parameter Store parameters.
 
 Usage
@@ -8,7 +8,7 @@ _____
 .. code:: python
 
     # Copy this snippet into your code
-    from sky_protect.helper.parameter_loader import ParameterLoader
+    from jonnobrows.helper.parameter_loader import ParameterLoader
 
     ParameterLoader().load_parameters()
 
@@ -17,6 +17,7 @@ _____
 
 import logging
 import os
+from typing import Optional
 import boto3
 
 logger = logging.getLogger(__name__)
@@ -93,29 +94,54 @@ def _export_parameters(parameters: list[dict], allow_list: list[str]) -> list[st
 
 
 class ParameterLoader:
-    required_environment_variables: list[str]
-    only_required: bool = False
+    _required: list[str]
+    _required_file: Optional[str]
+    _only_required: bool = False
 
-    def __init__(self, required_variables=None, only_required=False) -> None:
-        self.required_environment_variables = required_variables or []
-        self.only_required = only_required
+    def __init__(self, required=None, required_file=None, only_required=False) -> None:
+        self._required = required or []
+        self._required_file = required_file
+        self._only_required = only_required
+
+    @property
+    def _required_parameters(self) -> list[str]:
+        if self._required_file:
+            try:
+                with open(self._required_file, "r") as f:
+                    return f.read().splitlines()
+            except FileNotFoundError:
+                logger.warning(f"Required file not found: {self._required_file}")
+                return []
+        return self._required
+
+    @property
+    def _allow_list(self) -> list[str]:
+        return self._required_parameters if self._only_required else []
 
     def load_parameters(self) -> None:
+        """
+        Load parameters from AWS Systems Manager Parameter Store
+        and export them as environment variables.
+
+        Runs validation against required environment variables.
+        """
         for path in _parameter_paths():
             parameters = _get_parameters_by_path(path)
-            allow_list = (
-                self.required_environment_variables if self.only_required else []
-            )
-
-            _export_parameters(parameters, allow_list)
+            _export_parameters(parameters, self._allow_list)
         self.__check_required_environment()
 
+    def check_parameters(self) -> None:
+        """
+        Check parameters exist in AWS Systems Manager Parameter Store.
+        """
+        self._required_file
+
     def __check_required_environment(self) -> None:
-        if not self.required_environment_variables:
+        if not self._required:
             return
 
         missing = []
-        for variable in self.required_environment_variables:
+        for variable in self._required:
             if variable not in os.environ:
                 missing.append(variable)
         if missing:

@@ -1,7 +1,7 @@
 import os
 import pytest
 from botocore.stub import Stubber
-from sky_protect.helper.parameter_loader import ParameterLoader, ssm
+from jonnobrows.helper.parameter_loader import ParameterLoader, ssm
 from unittest import mock
 
 
@@ -195,9 +195,7 @@ def test_overrides(monkeypatch, ssm_stub):
 def test_required_params_missing(monkeypatch, ssm_stub):
     ssm_stub.add_response("get_parameters_by_path", {"Parameters": []})
     with pytest.raises(ValueError) as excinfo:
-        ParameterLoader(
-            required_variables=["PARAM_A", "PARAM_B", "PARAM_C"]
-        ).load_parameters()
+        ParameterLoader(required=["PARAM_A", "PARAM_B", "PARAM_C"]).load_parameters()
 
         assert "Missing required environment variables" in str(excinfo.value)
         assert "PARAM_A" in str(excinfo.value)
@@ -209,9 +207,7 @@ def test_required_params_with_env(monkeypatch, ssm_stub):
     monkeypatch.setenv("PARAM_A", value="value_a")
     ssm_stub.add_response("get_parameters_by_path", {"Parameters": []})
     with pytest.raises(ValueError) as excinfo:
-        ParameterLoader(
-            required_variables=["PARAM_A", "PARAM_B", "PARAM_C"]
-        ).load_parameters()
+        ParameterLoader(required=["PARAM_A", "PARAM_B", "PARAM_C"]).load_parameters()
 
         assert "Missing required environment variables" in str(excinfo.value)
         assert "PARAM_B" in str(excinfo.value)
@@ -233,9 +229,7 @@ def test_required_params_with_env_and_ssm(monkeypatch, ssm_stub):
     )
 
     with pytest.raises(ValueError) as excinfo:
-        ParameterLoader(
-            required_variables=["PARAM_A", "PARAM_B", "PARAM_C"]
-        ).load_parameters()
+        ParameterLoader(required=["PARAM_A", "PARAM_B", "PARAM_C"]).load_parameters()
 
         assert "Missing required environment variables" in str(excinfo.value)
         assert "PARAM_C" in str(excinfo.value)

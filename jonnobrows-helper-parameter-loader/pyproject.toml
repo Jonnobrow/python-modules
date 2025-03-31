@@ -3,12 +3,14 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "sky-protect-helper-parameter-loader"
+name = "jonnobrows-helper-parameter-loader"
 dynamic = ["version"]
-description = "SkyProtect Helper Parameter Loader"
+description = "Jonnobrow's Helper Parameter Loader"
 readme = "README.md"
 requires-python = ">=3.8"
-authors = []
+authors = [
+  {name = "Jonathan Bartlett", email = "jonathan@jonnobrow.co.uk"}
+]
 classifiers = [
   "Development Status :: 3 - Alpha",
   "Intended Audience :: Developers",
@@ -26,11 +28,11 @@ dependencies = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/sky-uk/sp-python-modules"
-Repository = "https://github.com/sky-uk/sp-python-modules"
+Homepage = "https://github.com/Jonnobrow/python-modules/tree/main/jonnobrows-helpers-parameter-loader"
+Repository = "https://github.com/Jonnobrow/python-modules"
 
 [tool.hatch.version]
-path = "src/sky_protect/helper/parameter_loader/version.py"
+path = "src/jonnobrows/helper/parameter_loader/version.py"
 
 [tool.hatch.build.targets.sdist]
 include = [
@@ -39,4 +41,4 @@ include = [
 ]
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/sky_protect"]
+packages = ["src/jonnobrows"]

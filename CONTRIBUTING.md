@@ -1,4 +1,4 @@
-# Contributing to sp-python-modules
+# Contributing to python-modules
 
 ## Development
 
