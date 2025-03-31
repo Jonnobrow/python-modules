@@ -17,8 +17,7 @@ _____
 
 import logging
 import os
-from pathlib import Path
-from typing import Optional
+
 import boto3
 
 logger = logging.getLogger(__name__)
@@ -65,8 +64,8 @@ def _get_parameters_by_path(path: str) -> list[dict]:
     return parameters
 
 
-def _export_parameters(parameters: list[dict], allow_list: list[str]) -> list[str]:
-    exported = []
+def _format_parameters(parameters: list[dict]) -> dict:
+    formatted = {}
     for parameter in parameters:
         full_name = parameter.get("Name")
         p_type = parameter.get("Type")
@@ -79,55 +78,60 @@ def _export_parameters(parameters: list[dict], allow_list: list[str]) -> list[st
 
         name = full_name.split("/")[-1]
 
-        if allow_list and name not in allow_list:
-            logger.info(f"Skipping parameter as not in allow list: {name}")
-            continue
-
         if p_type == "StringList":
             value = value.rstrip(",")
+        formatted[name] = value
+    return formatted
 
-        logger.debug(f"Exporting parameter: {name}={value}")
-        if name in os.environ:
-            logger.warning(f"Overwriting environment variable: {name}")
-        os.environ[name] = value
-        exported.append(name)
-    return exported
+
+def _export_parameters(parameters: list[dict], allow_list: list[str]) -> None:
+    formatted_parameters = _format_parameters(parameters)
+    for key, value in formatted_parameters.items():
+        if allow_list and key not in allow_list:
+            logger.info(f"Skipping parameter as not in allow list: {key}")
+            continue
+
+        logger.debug(f"Exporting parameter: {key}={value}")
+        if key in os.environ:
+            logger.warning(f"Overwriting environment variable: {key}")
+        os.environ[key] = value
+
+
+def _load_required_params(filename) -> list[str]:
+    logger.info(
+        "Trying to load required variable names from file: %s",
+        filename,
+    )
+    params = []
+    try:
+        with open(filename, "r") as f:
+            params = f.read().splitlines()
+    except Exception as exc:
+        logger.warning(
+            "Exception when trying to load required parameters file: %s",
+            exc_info=exc,
+        )
+    return sorted(set([r for r in params if r]))
+
+
+class ParameterLoaderError(ValueError):
+    pass
 
 
 class ParameterLoader:
     _required: list[str]
-    _required_file: str
-    _only_required: bool = False
+    _ignore_other: bool = False
 
-    def __init__(self, required=None, required_file=None, only_required=False) -> None:
-        self._required = required or []
-        self._required_file = required_file or "PARAMS"
-        self._only_required = only_required
-
-    @property
-    def _required_parameters(self) -> list[str]:
-        required = []
-        if self._required_file:
-            logger.info(
-                "Loading required environment variables from file: %s",
-                self._required_file,
-            )
-            try:
-                with open(self._required_file, "r") as f:
-                    required.extend(f.read().splitlines())
-            except FileNotFoundError:
-                logger.warning(
-                    f"Required parameters file not found: {self._required_file}"
-                )
-                return []
-        required.extend(self._required)
-        required = sorted(set(required))
-        logger.info(f"Required environment variables: {', '.join(required)}")
-        return required
+    def __init__(self, required=None, required_file=None, ignore_other=False) -> None:
+        all_required = required or []
+        all_required.extend(_load_required_params(required_file))
+        all_required = sorted(set([r for r in all_required if r]))
+        self._required = all_required
+        self._ignore_other = ignore_other
 
     @property
     def _allow_list(self) -> list[str]:
-        return self._required_parameters if self._only_required else []
+        return self._required if self._ignore_other else []
 
     def load_parameters(self) -> None:
         """
@@ -139,22 +143,30 @@ class ParameterLoader:
         for path in _parameter_paths():
             parameters = _get_parameters_by_path(path)
             _export_parameters(parameters, self._allow_list)
-        self.__check_required_environment()
+        self.__check_required_parameters(dict(os.environ))
 
     def check_parameters(self) -> None:
         """
         Check parameters exist in AWS Systems Manager Parameter Store.
         """
+        all_formatted_parameters = {}
+        for path in _parameter_paths():
+            parameters = _get_parameters_by_path(path)
+            all_formatted_parameters = {
+                **all_formatted_parameters,
+                **_format_parameters(parameters),
+            }
+        self.__check_required_parameters(all_formatted_parameters)
 
-    def __check_required_environment(self) -> None:
+    def __check_required_parameters(self, location: dict) -> None:
         if not self._required:
             return
 
         missing = []
         for variable in self._required:
-            if variable not in os.environ:
+            if variable not in location:
                 missing.append(variable)
         if missing:
-            raise ValueError(
+            raise ParameterLoaderError(
                 f"Required environment variables not found: {', '.join(missing)}"
             )

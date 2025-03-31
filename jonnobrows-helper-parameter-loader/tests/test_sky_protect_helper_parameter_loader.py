@@ -5,10 +5,12 @@ from jonnobrows.helper.parameter_loader import ParameterLoader, ssm
 from unittest import mock
 
 
-ECS_SERVICE_GROUP = "sky_protect_key_parameter_loader_ecs_group"
-ECS_SERVICE = "sky_protect_key_parameter_loader_ecs_service"
-LAMBDA_GROUP = "sky_protect_key_parameter_loader_lambda_group"
-LAMBDA_NAME = "sky_protect_key_parameter_loader_lambda"
+ECS_SERVICE_GROUP = "jonnobrows_key_parameter_loader_ecs_group"
+ECS_SERVICE = "jonnobrows_key_parameter_loader_ecs_service"
+LAMBDA_GROUP = "jonnobrows_key_parameter_loader_lambda_group"
+LAMBDA_NAME = "jonnobrows_key_parameter_loader_lambda"
+
+os.environ["AWS_DEFAULT_REGION"] = "eu-west-1"
 
 
 @pytest.fixture(autouse=True)
@@ -236,3 +238,21 @@ def test_required_params_with_env_and_ssm(monkeypatch, ssm_stub):
 
         assert "PARAM_A" not in str(excinfo.value)
         assert "PARAM_B" not in str(excinfo.value)
+
+
+def test_required_params_ignore_other(monkeypatch, ssm_stub):
+    monkeypatch.delenv("PARAM_IGNORED", raising=False)
+    ssm_stub.add_response(
+        "get_parameters_by_path",
+        {
+            "Parameters": [
+                {"Name": "/common/PARAM_LOADED", "Value": "value_b", "Type": "String"},
+                {"Name": "/common/PARAM_IGNORED", "Value": "value_c", "Type": "String"},
+            ]
+        },
+        expected_params=expected_params("/common/"),
+    )
+
+    ParameterLoader(required=["PARAM_LOADED"], ignore_other=True).load_parameters()
+    assert "PARAM_IGNORED" not in os.environ
+    assert os.environ.get("PARAM_LOADED") == "value_b"
